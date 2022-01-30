@@ -172,6 +172,7 @@ func (r *LocalRoomManager) StartSession(ctx context.Context, roomName string, pi
 		logger.Errorw("could not create room", err, "room", roomName)
 		return
 	}
+	defer room.Release()
 
 	participant := room.GetParticipant(pi.Identity)
 	if participant != nil {
@@ -266,7 +267,7 @@ func (r *LocalRoomManager) getOrCreateRoom(ctx context.Context, roomName string)
 	room := r.rooms[roomName]
 	r.lock.RUnlock()
 
-	if room != nil {
+	if room != nil && room.Hold() {
 		return room, nil
 	}
 
@@ -278,6 +279,8 @@ func (r *LocalRoomManager) getOrCreateRoom(ctx context.Context, roomName string)
 
 	// construct ice servers
 	room = rtc.NewRoom(ri, *r.rtcConfig, &r.config.Audio, r.telemetry)
+	room.Hold()
+
 	r.telemetry.RoomStarted(ctx, room.Room)
 
 	room.OnClose(func() {
