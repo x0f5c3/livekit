@@ -36,7 +36,7 @@ const (
 	rttUpdateInterval = 5 * time.Second
 
 	stateActiveCond           = 3 // reliableDCOpen,lossyDCOpen,PeerConnectionStateConnected
-	initNetWorkCost           = 100
+	initNetWorkCost           = 10
 	disconnectCleanupDuration = 15 * time.Second
 )
 
@@ -129,7 +129,7 @@ type ParticipantImpl struct {
 	onClaimsChanged     func(participant types.LocalParticipant)
 
 	activeCounter atomic.Int32
-	networkCost   int32
+	networkCost   atomic.Int32
 }
 
 func NewParticipant(params ParticipantParams) (*ParticipantImpl, error) {
@@ -151,8 +151,8 @@ func NewParticipant(params ParticipantParams) (*ParticipantImpl, error) {
 		disallowedSubscriptions:  make(map[livekit.TrackID]livekit.ParticipantID),
 		connectedAt:              time.Now(),
 		rttUpdatedAt:             time.Now(),
-		networkCost:              initNetWorkCost,
 	}
+	p.networkCost.Store(initNetWorkCost)
 	p.version.Store(params.InitialVersion)
 	p.migrateState.Store(types.MigrateStateInit)
 	p.state.Store(livekit.ParticipantInfo_JOINING)
@@ -608,7 +608,7 @@ func (p *ParticipantImpl) SetMigrateState(s types.MigrateState) {
 		p.activeCounter.CAS(0, 2)
 
 		// use lower network cost to make sure migrated's node has higher priority candidate
-		p.networkCost--
+		p.networkCost.Store(0)
 	}
 	p.lock.Unlock()
 	if s == types.MigrateStateComplete {
