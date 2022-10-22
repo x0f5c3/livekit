@@ -190,14 +190,15 @@ func TestOutOfOrderPictureId(t *testing.T) {
 	tp, err := v.UpdateAndGet(extPkt, SequenceNumberOrderingOutOfOrder, 2)
 	require.Error(t, err)
 	require.ErrorIs(t, err, ErrOutOfOrderVP8PictureIdCacheMiss)
-	require.Nil(t, tp)
+	require.Equal(t, TranslationParamsVP8{}, tp)
 
 	// create a hole in picture id
 	vp8.PictureID = 13469
 	extPkt, _ = testutils.GetTestExtPacketVP8(params, vp8)
 
 	tpExpected := TranslationParamsVP8{
-		Header: &buffer.VP8{
+		IsValid: true,
+		Header: buffer.VP8{
 			FirstByte:        25,
 			PictureIDPresent: 1,
 			PictureID:        13469,
@@ -216,7 +217,7 @@ func TestOutOfOrderPictureId(t *testing.T) {
 	tp, err = v.UpdateAndGet(extPkt, SequenceNumberOrderingGap, 2)
 	require.NoError(t, err)
 	require.NotNil(t, tp)
-	require.True(t, reflect.DeepEqual(tpExpected, *tp))
+	require.Equal(t, tpExpected, tp)
 
 	// all three, the last, the current and the in-between should have been added to missing picture id cache
 	value, ok := v.PictureIdOffset(13467)
@@ -236,7 +237,8 @@ func TestOutOfOrderPictureId(t *testing.T) {
 	extPkt, _ = testutils.GetTestExtPacketVP8(params, vp8)
 
 	tpExpected = TranslationParamsVP8{
-		Header: &buffer.VP8{
+		IsValid: true,
+		Header: buffer.VP8{
 			FirstByte:        25,
 			PictureIDPresent: 1,
 			PictureID:        13468,
@@ -255,7 +257,7 @@ func TestOutOfOrderPictureId(t *testing.T) {
 	tp, err = v.UpdateAndGet(extPkt, SequenceNumberOrderingOutOfOrder, 2)
 	require.NoError(t, err)
 	require.NotNil(t, tp)
-	require.True(t, reflect.DeepEqual(tpExpected, *tp))
+	require.Equal(t, tpExpected, tp)
 }
 
 func TestTemporalLayerFiltering(t *testing.T) {
@@ -288,7 +290,7 @@ func TestTemporalLayerFiltering(t *testing.T) {
 	tp, err := v.UpdateAndGet(extPkt, SequenceNumberOrderingContiguous, 0)
 	require.Error(t, err)
 	require.ErrorIs(t, err, ErrFilteredVP8TemporalLayer)
-	require.Nil(t, tp)
+	require.Equal(t, TranslationParamsVP8{}, tp)
 	require.EqualValues(t, 13467, v.lastDroppedPictureId)
 	require.EqualValues(t, 1, v.pictureIdOffset)
 
@@ -300,7 +302,7 @@ func TestTemporalLayerFiltering(t *testing.T) {
 	tp, err = v.UpdateAndGet(extPkt, SequenceNumberOrderingContiguous, 0)
 	require.Error(t, err)
 	require.ErrorIs(t, err, ErrFilteredVP8TemporalLayer)
-	require.Nil(t, tp)
+	require.Equal(t, TranslationParamsVP8{}, tp)
 	require.EqualValues(t, 13467, v.lastDroppedPictureId)
 	require.EqualValues(t, 1, v.pictureIdOffset)
 
@@ -312,7 +314,7 @@ func TestTemporalLayerFiltering(t *testing.T) {
 	tp, err = v.UpdateAndGet(extPkt, SequenceNumberOrderingContiguous, 0)
 	require.Error(t, err)
 	require.ErrorIs(t, err, ErrFilteredVP8TemporalLayer)
-	require.Nil(t, tp)
+	require.Equal(t, TranslationParamsVP8{}, tp)
 	require.EqualValues(t, 13467, v.lastDroppedPictureId)
 	require.EqualValues(t, 1, v.pictureIdOffset)
 }
@@ -345,7 +347,8 @@ func TestGapInSequenceNumberSamePicture(t *testing.T) {
 	v.SetLast(extPkt)
 
 	tpExpected := TranslationParamsVP8{
-		Header: &buffer.VP8{
+		IsValid: true,
+		Header: buffer.VP8{
 			FirstByte:        25,
 			PictureIDPresent: 1,
 			PictureID:        13467,
@@ -363,11 +366,12 @@ func TestGapInSequenceNumberSamePicture(t *testing.T) {
 	}
 	tp, err := v.UpdateAndGet(extPkt, SequenceNumberOrderingContiguous, 2)
 	require.NoError(t, err)
-	require.True(t, reflect.DeepEqual(*tp, tpExpected))
+	require.Equal(t, tp, tpExpected)
 
 	// telling there is a gap in sequence number will add pictures to missing picture cache
 	tpExpected = TranslationParamsVP8{
-		Header: &buffer.VP8{
+		IsValid: true,
+		Header: buffer.VP8{
 			FirstByte:        25,
 			PictureIDPresent: 1,
 			PictureID:        13467,
@@ -385,7 +389,7 @@ func TestGapInSequenceNumberSamePicture(t *testing.T) {
 	}
 	tp, err = v.UpdateAndGet(extPkt, SequenceNumberOrderingGap, 2)
 	require.NoError(t, err)
-	require.True(t, reflect.DeepEqual(*tp, tpExpected))
+	require.Equal(t, tpExpected, tp)
 
 	value, ok := v.PictureIdOffset(13467)
 	require.True(t, ok)
@@ -437,7 +441,7 @@ func TestUpdateAndGetPadding(t *testing.T) {
 		HeaderSize:       6,
 		IsKeyFrame:       true,
 	}
-	require.True(t, reflect.DeepEqual(expectedVP8, *blankVP8))
+	require.Equal(t, expectedVP8, blankVP8)
 
 	// getting padding with new picture
 	blankVP8 = v.UpdateAndGetPadding(true)
@@ -456,7 +460,7 @@ func TestUpdateAndGetPadding(t *testing.T) {
 		HeaderSize:       6,
 		IsKeyFrame:       true,
 	}
-	require.True(t, reflect.DeepEqual(expectedVP8, *blankVP8))
+	require.Equal(t, expectedVP8, blankVP8)
 }
 
 func TestVP8PictureIdWrapHandler(t *testing.T) {

@@ -23,7 +23,7 @@ type TestExtPacketParams struct {
 
 // -----------------------------------------------------------
 
-func GetTestExtPacket(params *TestExtPacketParams) (*buffer.ExtPacket, error) {
+func GetTestExtPacket(params *TestExtPacketParams) (buffer.ExtPacket, error) {
 	packet := rtp.Packet{
 		Header: rtp.Header{
 			Version:        2,
@@ -40,10 +40,10 @@ func GetTestExtPacket(params *TestExtPacketParams) (*buffer.ExtPacket, error) {
 
 	raw, err := packet.Marshal()
 	if err != nil {
-		return nil, err
+		return buffer.ExtPacket{}, err
 	}
 
-	ep := &buffer.ExtPacket{
+	ep := buffer.ExtPacket{
 		Arrival:   params.ArrivalTime,
 		Packet:    &packet,
 		KeyFrame:  params.IsKeyFrame,
@@ -55,10 +55,10 @@ func GetTestExtPacket(params *TestExtPacketParams) (*buffer.ExtPacket, error) {
 
 // --------------------------------------
 
-func GetTestExtPacketVP8(params *TestExtPacketParams, vp8 *buffer.VP8) (*buffer.ExtPacket, error) {
+func GetTestExtPacketVP8(params *TestExtPacketParams, vp8 *buffer.VP8) (buffer.ExtPacket, error) {
 	ep, err := GetTestExtPacket(params)
 	if err != nil {
-		return nil, err
+		return buffer.ExtPacket{}, err
 	}
 
 	ep.KeyFrame = vp8.IsKeyFrame

@@ -1,7 +1,6 @@
 package sfu
 
 import (
-	"reflect"
 	"testing"
 
 	"github.com/pion/webrtc/v3"
@@ -1185,7 +1184,7 @@ func TestForwarderGetTranslationParamsMuted(t *testing.T) {
 	}
 	actualTP, err := f.GetTranslationParams(extPkt, 0)
 	require.NoError(t, err)
-	require.Equal(t, expectedTP, *actualTP)
+	require.Equal(t, expectedTP, actualTP)
 }
 
 func TestForwarderGetTranslationParamsAudio(t *testing.T) {
@@ -1201,7 +1200,7 @@ func TestForwarderGetTranslationParamsAudio(t *testing.T) {
 
 	// should lock onto the first packet
 	expectedTP := TranslationParams{
-		rtp: &TranslationParamsRTP{
+		rtp: TranslationParamsRTP{
 			snOrdering:     SequenceNumberOrderingContiguous,
 			sequenceNumber: 23333,
 			timestamp:      0xabcdef,
@@ -1209,7 +1208,7 @@ func TestForwarderGetTranslationParamsAudio(t *testing.T) {
 	}
 	actualTP, err := f.GetTranslationParams(extPkt, 0)
 	require.NoError(t, err)
-	require.True(t, reflect.DeepEqual(expectedTP, *actualTP))
+	require.Equal(t, expectedTP, actualTP)
 	require.True(t, f.started)
 	require.Equal(t, f.lastSSRC, params.SSRC)
 
@@ -1219,7 +1218,7 @@ func TestForwarderGetTranslationParamsAudio(t *testing.T) {
 	}
 	actualTP, err = f.GetTranslationParams(extPkt, 0)
 	require.NoError(t, err)
-	require.True(t, reflect.DeepEqual(expectedTP, *actualTP))
+	require.Equal(t, expectedTP, actualTP)
 
 	// out-of-order packet not in cache should be dropped
 	params = &testutils.TestExtPacketParams{
@@ -1236,7 +1235,7 @@ func TestForwarderGetTranslationParamsAudio(t *testing.T) {
 	}
 	actualTP, err = f.GetTranslationParams(extPkt, 0)
 	require.NoError(t, err)
-	require.True(t, reflect.DeepEqual(expectedTP, *actualTP))
+	require.Equal(t, expectedTP, actualTP)
 
 	// padding only packet in order should be dropped
 	params = &testutils.TestExtPacketParams{
@@ -1251,7 +1250,7 @@ func TestForwarderGetTranslationParamsAudio(t *testing.T) {
 	}
 	actualTP, err = f.GetTranslationParams(extPkt, 0)
 	require.NoError(t, err)
-	require.True(t, reflect.DeepEqual(expectedTP, *actualTP))
+	require.Equal(t, expectedTP, actualTP)
 
 	// in order packet should be forwarded
 	params = &testutils.TestExtPacketParams{
@@ -1263,7 +1262,7 @@ func TestForwarderGetTranslationParamsAudio(t *testing.T) {
 	extPkt, _ = testutils.GetTestExtPacket(params)
 
 	expectedTP = TranslationParams{
-		rtp: &TranslationParamsRTP{
+		rtp: TranslationParamsRTP{
 			snOrdering:     SequenceNumberOrderingContiguous,
 			sequenceNumber: 23334,
 			timestamp:      0xabcdef,
@@ -1271,7 +1270,7 @@ func TestForwarderGetTranslationParamsAudio(t *testing.T) {
 	}
 	actualTP, err = f.GetTranslationParams(extPkt, 0)
 	require.NoError(t, err)
-	require.True(t, reflect.DeepEqual(expectedTP, *actualTP))
+	require.Equal(t, expectedTP, actualTP)
 
 	// padding only packet after a gap should be forwarded
 	params = &testutils.TestExtPacketParams{
@@ -1282,7 +1281,7 @@ func TestForwarderGetTranslationParamsAudio(t *testing.T) {
 	extPkt, _ = testutils.GetTestExtPacket(params)
 
 	expectedTP = TranslationParams{
-		rtp: &TranslationParamsRTP{
+		rtp: TranslationParamsRTP{
 			snOrdering:     SequenceNumberOrderingGap,
 			sequenceNumber: 23336,
 			timestamp:      0xabcdef,
@@ -1290,7 +1289,7 @@ func TestForwarderGetTranslationParamsAudio(t *testing.T) {
 	}
 	actualTP, err = f.GetTranslationParams(extPkt, 0)
 	require.NoError(t, err)
-	require.True(t, reflect.DeepEqual(expectedTP, *actualTP))
+	require.Equal(t, expectedTP, actualTP)
 
 	// out-of-order should be forwarded using cache
 	params = &testutils.TestExtPacketParams{
@@ -1302,7 +1301,7 @@ func TestForwarderGetTranslationParamsAudio(t *testing.T) {
 	extPkt, _ = testutils.GetTestExtPacket(params)
 
 	expectedTP = TranslationParams{
-		rtp: &TranslationParamsRTP{
+		rtp: TranslationParamsRTP{
 			snOrdering:     SequenceNumberOrderingOutOfOrder,
 			sequenceNumber: 23335,
 			timestamp:      0xabcdef,
@@ -1310,7 +1309,7 @@ func TestForwarderGetTranslationParamsAudio(t *testing.T) {
 	}
 	actualTP, err = f.GetTranslationParams(extPkt, 0)
 	require.NoError(t, err)
-	require.True(t, reflect.DeepEqual(expectedTP, *actualTP))
+	require.Equal(t, expectedTP, actualTP)
 
 	// switching source should lock onto the new source, but sequence number should be contiguous
 	params = &testutils.TestExtPacketParams{
@@ -1322,7 +1321,7 @@ func TestForwarderGetTranslationParamsAudio(t *testing.T) {
 	extPkt, _ = testutils.GetTestExtPacket(params)
 
 	expectedTP = TranslationParams{
-		rtp: &TranslationParamsRTP{
+		rtp: TranslationParamsRTP{
 			snOrdering:     SequenceNumberOrderingContiguous,
 			sequenceNumber: 23337,
 			timestamp:      0xabcdf0,
@@ -1330,7 +1329,7 @@ func TestForwarderGetTranslationParamsAudio(t *testing.T) {
 	}
 	actualTP, err = f.GetTranslationParams(extPkt, 0)
 	require.NoError(t, err)
-	require.True(t, reflect.DeepEqual(expectedTP, *actualTP))
+	require.Equal(t, expectedTP, actualTP)
 	require.Equal(t, f.lastSSRC, params.SSRC)
 }
 
@@ -1366,9 +1365,9 @@ func TestForwarderGetTranslationParamsVideo(t *testing.T) {
 	}
 	actualTP, err := f.GetTranslationParams(extPkt, 0)
 	require.NoError(t, err)
-	require.Equal(t, expectedTP, *actualTP)
+	require.Equal(t, expectedTP, actualTP)
 
-	// although target layer matches, not a key frame, so should drop and ask to send PLI
+	// although target layer matches, not a key frame, so should drop
 	f.targetLayers = VideoLayers{
 		Spatial:  0,
 		Temporal: 1,
@@ -1378,7 +1377,7 @@ func TestForwarderGetTranslationParamsVideo(t *testing.T) {
 	}
 	actualTP, err = f.GetTranslationParams(extPkt, 0)
 	require.NoError(t, err)
-	require.Equal(t, expectedTP, *actualTP)
+	require.Equal(t, expectedTP, actualTP)
 
 	// should lock onto packet (target layer and key frame)
 	vp8 = &buffer.VP8{
@@ -1398,13 +1397,14 @@ func TestForwarderGetTranslationParamsVideo(t *testing.T) {
 	}
 	extPkt, _ = testutils.GetTestExtPacketVP8(params, vp8)
 	expectedTP = TranslationParams{
-		rtp: &TranslationParamsRTP{
+		rtp: TranslationParamsRTP{
 			snOrdering:     SequenceNumberOrderingContiguous,
 			sequenceNumber: 23333,
 			timestamp:      0xabcdef,
 		},
-		vp8: &TranslationParamsVP8{
-			Header: &buffer.VP8{
+		vp8: TranslationParamsVP8{
+			IsValid: true,
+			Header: buffer.VP8{
 				FirstByte:        25,
 				PictureIDPresent: 1,
 				PictureID:        13467,
@@ -1423,7 +1423,7 @@ func TestForwarderGetTranslationParamsVideo(t *testing.T) {
 	}
 	actualTP, err = f.GetTranslationParams(extPkt, 0)
 	require.NoError(t, err)
-	require.True(t, reflect.DeepEqual(expectedTP, *actualTP))
+	require.Equal(t, expectedTP, actualTP)
 	require.True(t, f.started)
 	require.Equal(t, f.lastSSRC, params.SSRC)
 
@@ -1433,7 +1433,7 @@ func TestForwarderGetTranslationParamsVideo(t *testing.T) {
 	}
 	actualTP, err = f.GetTranslationParams(extPkt, 0)
 	require.NoError(t, err)
-	require.True(t, reflect.DeepEqual(expectedTP, *actualTP))
+	require.Equal(t, expectedTP, actualTP)
 
 	// out-of-order packet not in cache should be dropped
 	params = &testutils.TestExtPacketParams{
@@ -1449,7 +1449,7 @@ func TestForwarderGetTranslationParamsVideo(t *testing.T) {
 	}
 	actualTP, err = f.GetTranslationParams(extPkt, 0)
 	require.NoError(t, err)
-	require.True(t, reflect.DeepEqual(expectedTP, *actualTP))
+	require.Equal(t, expectedTP, actualTP)
 
 	// padding only packet in order should be dropped
 	params = &testutils.TestExtPacketParams{
@@ -1463,7 +1463,7 @@ func TestForwarderGetTranslationParamsVideo(t *testing.T) {
 	}
 	actualTP, err = f.GetTranslationParams(extPkt, 0)
 	require.NoError(t, err)
-	require.True(t, reflect.DeepEqual(expectedTP, *actualTP))
+	require.Equal(t, expectedTP, actualTP)
 
 	// in order packet should be forwarded
 	params = &testutils.TestExtPacketParams{
@@ -1474,13 +1474,14 @@ func TestForwarderGetTranslationParamsVideo(t *testing.T) {
 	}
 	extPkt, _ = testutils.GetTestExtPacketVP8(params, vp8)
 	expectedTP = TranslationParams{
-		rtp: &TranslationParamsRTP{
+		rtp: TranslationParamsRTP{
 			snOrdering:     SequenceNumberOrderingContiguous,
 			sequenceNumber: 23334,
 			timestamp:      0xabcdef,
 		},
-		vp8: &TranslationParamsVP8{
-			Header: &buffer.VP8{
+		vp8: TranslationParamsVP8{
+			IsValid: true,
+			Header: buffer.VP8{
 				FirstByte:        25,
 				PictureIDPresent: 1,
 				PictureID:        13467,
@@ -1499,7 +1500,7 @@ func TestForwarderGetTranslationParamsVideo(t *testing.T) {
 	}
 	actualTP, err = f.GetTranslationParams(extPkt, 0)
 	require.NoError(t, err)
-	require.True(t, reflect.DeepEqual(expectedTP, *actualTP))
+	require.Equal(t, expectedTP, actualTP)
 
 	// temporal layer higher than target, should be dropped
 	params = &testutils.TestExtPacketParams{
@@ -1529,7 +1530,7 @@ func TestForwarderGetTranslationParamsVideo(t *testing.T) {
 	}
 	actualTP, err = f.GetTranslationParams(extPkt, 0)
 	require.NoError(t, err)
-	require.True(t, reflect.DeepEqual(expectedTP, *actualTP))
+	require.Equal(t, expectedTP, actualTP)
 
 	// RTP sequence number and VP8 picture id should be contiguous after dropping higher temporal layer picture
 	params = &testutils.TestExtPacketParams{
@@ -1555,13 +1556,14 @@ func TestForwarderGetTranslationParamsVideo(t *testing.T) {
 	}
 	extPkt, _ = testutils.GetTestExtPacketVP8(params, vp8)
 	expectedTP = TranslationParams{
-		rtp: &TranslationParamsRTP{
+		rtp: TranslationParamsRTP{
 			snOrdering:     SequenceNumberOrderingContiguous,
 			sequenceNumber: 23335,
 			timestamp:      0xabcdef,
 		},
-		vp8: &TranslationParamsVP8{
-			Header: &buffer.VP8{
+		vp8: TranslationParamsVP8{
+			IsValid: true,
+			Header: buffer.VP8{
 				FirstByte:        25,
 				PictureIDPresent: 1,
 				PictureID:        13468,
@@ -1580,7 +1582,7 @@ func TestForwarderGetTranslationParamsVideo(t *testing.T) {
 	}
 	actualTP, err = f.GetTranslationParams(extPkt, 0)
 	require.NoError(t, err)
-	require.True(t, reflect.DeepEqual(expectedTP, *actualTP))
+	require.Equal(t, expectedTP, actualTP)
 
 	// padding only packet after a gap should be forwarded
 	params = &testutils.TestExtPacketParams{
@@ -1591,7 +1593,7 @@ func TestForwarderGetTranslationParamsVideo(t *testing.T) {
 	extPkt, _ = testutils.GetTestExtPacket(params)
 
 	expectedTP = TranslationParams{
-		rtp: &TranslationParamsRTP{
+		rtp: TranslationParamsRTP{
 			snOrdering:     SequenceNumberOrderingGap,
 			sequenceNumber: 23337,
 			timestamp:      0xabcdef,
@@ -1599,7 +1601,7 @@ func TestForwarderGetTranslationParamsVideo(t *testing.T) {
 	}
 	actualTP, err = f.GetTranslationParams(extPkt, 0)
 	require.NoError(t, err)
-	require.True(t, reflect.DeepEqual(expectedTP, *actualTP))
+	require.Equal(t, expectedTP, actualTP)
 
 	// out-of-order should be forwarded using cache, even if it is padding only
 	params = &testutils.TestExtPacketParams{
@@ -1610,7 +1612,7 @@ func TestForwarderGetTranslationParamsVideo(t *testing.T) {
 	extPkt, _ = testutils.GetTestExtPacket(params)
 
 	expectedTP = TranslationParams{
-		rtp: &TranslationParamsRTP{
+		rtp: TranslationParamsRTP{
 			snOrdering:     SequenceNumberOrderingOutOfOrder,
 			sequenceNumber: 23336,
 			timestamp:      0xabcdef,
@@ -1618,7 +1620,7 @@ func TestForwarderGetTranslationParamsVideo(t *testing.T) {
 	}
 	actualTP, err = f.GetTranslationParams(extPkt, 0)
 	require.NoError(t, err)
-	require.True(t, reflect.DeepEqual(expectedTP, *actualTP))
+	require.Equal(t, expectedTP, actualTP)
 
 	// switching SSRC (happens for new layer or new track source)
 	// should lock onto the new source, but sequence number should be contiguous
@@ -1651,13 +1653,14 @@ func TestForwarderGetTranslationParamsVideo(t *testing.T) {
 	extPkt, _ = testutils.GetTestExtPacketVP8(params, vp8)
 
 	expectedTP = TranslationParams{
-		rtp: &TranslationParamsRTP{
+		rtp: TranslationParamsRTP{
 			snOrdering:     SequenceNumberOrderingContiguous,
 			sequenceNumber: 23338,
 			timestamp:      0xabcdf0,
 		},
-		vp8: &TranslationParamsVP8{
-			Header: &buffer.VP8{
+		vp8: TranslationParamsVP8{
+			IsValid: true,
+			Header: buffer.VP8{
 				FirstByte:        25,
 				PictureIDPresent: 1,
 				PictureID:        13469,
@@ -1676,7 +1679,7 @@ func TestForwarderGetTranslationParamsVideo(t *testing.T) {
 	}
 	actualTP, err = f.GetTranslationParams(extPkt, 1)
 	require.NoError(t, err)
-	require.True(t, reflect.DeepEqual(expectedTP, *actualTP))
+	require.Equal(t, expectedTP, actualTP)
 	require.Equal(t, f.lastSSRC, params.SSRC)
 }
 
@@ -1869,7 +1872,7 @@ func TestForwardGetPaddingVP8(t *testing.T) {
 		IsKeyFrame:       true,
 	}
 	blankVP8 := f.GetPaddingVP8(true)
-	require.True(t, reflect.DeepEqual(expectedVP8, *blankVP8))
+	require.Equal(t, expectedVP8, blankVP8)
 
 	// getting padding with no frame end needed, should get next picture id
 	expectedVP8 = buffer.VP8{
@@ -1888,5 +1891,5 @@ func TestForwardGetPaddingVP8(t *testing.T) {
 		IsKeyFrame:       true,
 	}
 	blankVP8 = f.GetPaddingVP8(false)
-	require.True(t, reflect.DeepEqual(expectedVP8, *blankVP8))
+	require.Equal(t, expectedVP8, blankVP8)
 }

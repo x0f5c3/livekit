@@ -258,14 +258,14 @@ func (b *Buffer) Read(buff []byte) (n int, err error) {
 	}
 }
 
-func (b *Buffer) ReadExtended() (*ExtPacket, error) {
+func (b *Buffer) ReadExtended() (ExtPacket, error) {
 	for {
 		if b.closed.Load() {
-			return nil, io.EOF
+			return ExtPacket{}, io.EOF
 		}
 		b.Lock()
 		if b.extPackets.Len() > 0 {
-			extPkt := b.extPackets.PopFront().(*ExtPacket)
+			extPkt := b.extPackets.PopFront().(ExtPacket)
 			b.Unlock()
 			return extPkt, nil
 		}
@@ -380,8 +380,8 @@ func (b *Buffer) calc(pkt []byte, arrivalTime int64) {
 	b.updateStreamState(&p, arrivalTime)
 	b.processHeaderExtensions(&p, arrivalTime)
 
-	ep := b.getExtPacket(pb, &p, arrivalTime)
-	if ep == nil {
+	ep, isValid := b.getExtPacket(pb, &p, arrivalTime)
+	if !isValid {
 		return
 	}
 	b.extPackets.PushBack(ep)
@@ -435,8 +435,8 @@ func (b *Buffer) processHeaderExtensions(p *rtp.Packet, arrivalTime int64) {
 	}
 }
 
-func (b *Buffer) getExtPacket(rawPacket []byte, rtpPacket *rtp.Packet, arrivalTime int64) *ExtPacket {
-	ep := &ExtPacket{
+func (b *Buffer) getExtPacket(rawPacket []byte, rtpPacket *rtp.Packet, arrivalTime int64) (ExtPacket, bool) {
+	ep := ExtPacket{
 		Packet:    rtpPacket,
 		Arrival:   arrivalTime,
 		RawPacket: rawPacket,
@@ -448,7 +448,7 @@ func (b *Buffer) getExtPacket(rawPacket []byte, rtpPacket *rtp.Packet, arrivalTi
 
 	if len(rtpPacket.Payload) == 0 {
 		// padding only packet, nothing else to do
-		return ep
+		return ep, true
 	}
 
 	ep.Temporal = 0
@@ -465,7 +465,7 @@ func (b *Buffer) getExtPacket(rawPacket []byte, rtpPacket *rtp.Packet, arrivalTi
 		vp8Packet := VP8{}
 		if err := vp8Packet.Unmarshal(rtpPacket.Payload); err != nil {
 			b.logger.Warnw("could not unmarshal VP8 packet", err)
-			return nil
+			return ep, false
 		}
 		ep.Payload = vp8Packet
 		ep.KeyFrame = vp8Packet.IsKeyFrame
@@ -488,7 +488,7 @@ func (b *Buffer) getExtPacket(rawPacket []byte, rtpPacket *rtp.Packet, arrivalTi
 		}
 	}
 
-	return ep
+	return ep, true
 }
 
 func (b *Buffer) doNACKs() {

@@ -14,7 +14,8 @@ import (
 // VP8 munger
 //
 type TranslationParamsVP8 struct {
-	Header *buffer.VP8
+	IsValid bool
+	Header  buffer.VP8
 }
 
 // -----------------------------------------------------------
@@ -91,7 +92,7 @@ func (v *VP8Munger) SeedLast(state VP8MungerState) {
 	v.keyIdxUsed = state.KeyIdxUsed
 }
 
-func (v *VP8Munger) SetLast(extPkt *buffer.ExtPacket) {
+func (v *VP8Munger) SetLast(extPkt buffer.ExtPacket) {
 	vp8, ok := extPkt.Payload.(buffer.VP8)
 	if !ok {
 		return
@@ -118,7 +119,7 @@ func (v *VP8Munger) SetLast(extPkt *buffer.ExtPacket) {
 	v.lastDroppedPictureId = -1
 }
 
-func (v *VP8Munger) UpdateOffsets(extPkt *buffer.ExtPacket) {
+func (v *VP8Munger) UpdateOffsets(extPkt buffer.ExtPacket) {
 	vp8, ok := extPkt.Payload.(buffer.VP8)
 	if !ok {
 		return
@@ -143,10 +144,10 @@ func (v *VP8Munger) UpdateOffsets(extPkt *buffer.ExtPacket) {
 	v.lastDroppedPictureId = -1
 }
 
-func (v *VP8Munger) UpdateAndGet(extPkt *buffer.ExtPacket, ordering SequenceNumberOrdering, maxTemporalLayer int32) (*TranslationParamsVP8, error) {
+func (v *VP8Munger) UpdateAndGet(extPkt buffer.ExtPacket, ordering SequenceNumberOrdering, maxTemporalLayer int32) (TranslationParamsVP8, error) {
 	vp8, ok := extPkt.Payload.(buffer.VP8)
 	if !ok {
-		return nil, ErrNotVP8
+		return TranslationParamsVP8{}, ErrNotVP8
 	}
 
 	extPictureId := v.pictureIdWrapHandler.Unwrap(vp8.PictureID, vp8.MBit)
@@ -155,7 +156,7 @@ func (v *VP8Munger) UpdateAndGet(extPkt *buffer.ExtPacket, ordering SequenceNumb
 	if ordering == SequenceNumberOrderingOutOfOrder {
 		value, ok := v.missingPictureIds.Get(extPictureId)
 		if !ok {
-			return nil, ErrOutOfOrderVP8PictureIdCacheMiss
+			return TranslationParamsVP8{}, ErrOutOfOrderVP8PictureIdCacheMiss
 		}
 		pictureIdOffset := value.(int32)
 
@@ -166,7 +167,7 @@ func (v *VP8Munger) UpdateAndGet(extPkt *buffer.ExtPacket, ordering SequenceNumb
 		// when it reaches a certain size.
 
 		mungedPictureId := uint16((extPictureId - pictureIdOffset) & 0x7fff)
-		vp8Packet := &buffer.VP8{
+		vp8Packet := buffer.VP8{
 			FirstByte:        vp8.FirstByte,
 			PictureIDPresent: vp8.PictureIDPresent,
 			PictureID:        mungedPictureId,
@@ -181,8 +182,9 @@ func (v *VP8Munger) UpdateAndGet(extPkt *buffer.ExtPacket, ordering SequenceNumb
 			IsKeyFrame:       vp8.IsKeyFrame,
 			HeaderSize:       vp8.HeaderSize + buffer.VP8PictureIdSizeDiff(mungedPictureId > 127, vp8.MBit),
 		}
-		return &TranslationParamsVP8{
-			Header: vp8Packet,
+		return TranslationParamsVP8{
+			IsValid: true,
+			Header:  vp8Packet,
 		}, nil
 	}
 
@@ -211,7 +213,7 @@ func (v *VP8Munger) UpdateAndGet(extPkt *buffer.ExtPacket, ordering SequenceNumb
 		// If Packet 11 comes around, it will be reported as OUT_OF_ORDER, but the missing
 		// picture id cache will not have an entry and hence will be dropped.
 		if extPictureId == v.lastDroppedPictureId {
-			return nil, ErrFilteredVP8TemporalLayer
+			return TranslationParamsVP8{}, ErrFilteredVP8TemporalLayer
 		} else {
 			for lostPictureId := prevMaxPictureId; lostPictureId <= extPictureId; lostPictureId++ {
 				v.missingPictureIds.Set(lostPictureId, v.pictureIdOffset)
@@ -230,7 +232,7 @@ func (v *VP8Munger) UpdateAndGet(extPkt *buffer.ExtPacket, ordering SequenceNumb
 				v.lastDroppedPictureId = extPictureId
 				v.pictureIdOffset += 1
 			}
-			return nil, ErrFilteredVP8TemporalLayer
+			return TranslationParamsVP8{}, ErrFilteredVP8TemporalLayer
 		}
 	}
 
@@ -249,7 +251,7 @@ func (v *VP8Munger) UpdateAndGet(extPkt *buffer.ExtPacket, ordering SequenceNumb
 	v.lastTl0PicIdx = mungedTl0PicIdx
 	v.lastKeyIdx = mungedKeyIdx
 
-	vp8Packet := &buffer.VP8{
+	vp8Packet := buffer.VP8{
 		FirstByte:        vp8.FirstByte,
 		PictureIDPresent: vp8.PictureIDPresent,
 		PictureID:        mungedPictureId,
@@ -264,12 +266,13 @@ func (v *VP8Munger) UpdateAndGet(extPkt *buffer.ExtPacket, ordering SequenceNumb
 		IsKeyFrame:       vp8.IsKeyFrame,
 		HeaderSize:       vp8.HeaderSize + buffer.VP8PictureIdSizeDiff(mungedPictureId > 127, vp8.MBit),
 	}
-	return &TranslationParamsVP8{
-		Header: vp8Packet,
+	return TranslationParamsVP8{
+		IsValid: true,
+		Header:  vp8Packet,
 	}, nil
 }
 
-func (v *VP8Munger) UpdateAndGetPadding(newPicture bool) *buffer.VP8 {
+func (v *VP8Munger) UpdateAndGetPadding(newPicture bool) buffer.VP8 {
 	offset := 0
 	if newPicture {
 		offset = 1
@@ -312,7 +315,7 @@ func (v *VP8Munger) UpdateAndGetPadding(newPicture bool) *buffer.VP8 {
 		v.keyIdxOffset -= uint8(offset)
 	}
 
-	vp8Packet := &buffer.VP8{
+	vp8Packet := buffer.VP8{
 		FirstByte:        0x10, // partition 0, start of VP8 Partition, reference frame
 		PictureIDPresent: v.pictureIdUsed,
 		PictureID:        pictureId,

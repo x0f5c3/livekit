@@ -56,7 +56,7 @@ type packetMeta struct {
 	ddBytes []byte
 }
 
-func (p *packetMeta) packVP8(vp8 *buffer.VP8) {
+func (p *packetMeta) packVP8(vp8 buffer.VP8) {
 	p.misc = uint64(vp8.FirstByte)<<56 |
 		uint64(vp8.PictureIDPresent&0x1)<<55 |
 		uint64(vp8.TL0PICIDXPresent&0x1)<<54 |
@@ -72,8 +72,8 @@ func (p *packetMeta) packVP8(vp8 *buffer.VP8) {
 		uint64(vp8.HeaderSize&0xFF)<<8
 }
 
-func (p *packetMeta) unpackVP8() *buffer.VP8 {
-	return &buffer.VP8{
+func (p *packetMeta) unpackVP8() buffer.VP8 {
+	return buffer.VP8{
 		FirstByte:        byte(p.misc >> 56),
 		PictureIDPresent: int((p.misc >> 55) & 0x1),
 		PictureID:        uint16((p.misc >> 32) & 0x7FFF),

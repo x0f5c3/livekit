@@ -142,8 +142,8 @@ type TranslationParams struct {
 	shouldDrop            bool
 	isDroppingRelevant    bool
 	isSwitchingToMaxLayer bool
-	rtp                   *TranslationParamsRTP
-	vp8                   *TranslationParamsVP8
+	rtp                   TranslationParamsRTP
+	vp8                   TranslationParamsVP8
 	ddExtension           *dd.DependencyDescriptorExtension
 	marker                bool
 
@@ -1341,12 +1341,12 @@ func (f *Forwarder) FilterRTX(nacks []uint16) (filtered []uint16, disallowedLaye
 	return
 }
 
-func (f *Forwarder) GetTranslationParams(extPkt *buffer.ExtPacket, layer int32) (*TranslationParams, error) {
+func (f *Forwarder) GetTranslationParams(extPkt buffer.ExtPacket, layer int32) (TranslationParams, error) {
 	f.lock.Lock()
 	defer f.lock.Unlock()
 
 	if f.muted {
-		return &TranslationParams{
+		return TranslationParams{
 			shouldDrop: true,
 		}, nil
 	}
@@ -1358,11 +1358,11 @@ func (f *Forwarder) GetTranslationParams(extPkt *buffer.ExtPacket, layer int32) 
 		return f.getTranslationParamsVideo(extPkt, layer)
 	}
 
-	return nil, ErrUnknownKind
+	return TranslationParams{}, ErrUnknownKind
 }
 
 // should be called with lock held
-func (f *Forwarder) getTranslationParamsCommon(extPkt *buffer.ExtPacket, tp *TranslationParams) (*TranslationParams, error) {
+func (f *Forwarder) getTranslationParamsCommon(extPkt buffer.ExtPacket, tp TranslationParams) (TranslationParams, error) {
 	if f.lastSSRC != extPkt.Packet.SSRC {
 		if !f.started {
 			f.started = true
@@ -1404,9 +1404,6 @@ func (f *Forwarder) getTranslationParamsCommon(extPkt *buffer.ExtPacket, tp *Tra
 
 	f.lTSCalc = extPkt.Arrival
 
-	if tp == nil {
-		tp = &TranslationParams{}
-	}
 	tpRTP, err := f.rtpMunger.UpdateAndGetSnTs(extPkt)
 	if err != nil {
 		tp.shouldDrop = true
@@ -1426,13 +1423,13 @@ func (f *Forwarder) getTranslationParamsCommon(extPkt *buffer.ExtPacket, tp *Tra
 }
 
 // should be called with lock held
-func (f *Forwarder) getTranslationParamsAudio(extPkt *buffer.ExtPacket) (*TranslationParams, error) {
-	return f.getTranslationParamsCommon(extPkt, nil)
+func (f *Forwarder) getTranslationParamsAudio(extPkt buffer.ExtPacket) (TranslationParams, error) {
+	return f.getTranslationParamsCommon(extPkt, TranslationParams{})
 }
 
 // should be called with lock held
-func (f *Forwarder) getTranslationParamsVideo(extPkt *buffer.ExtPacket, layer int32) (*TranslationParams, error) {
-	tp := &TranslationParams{}
+func (f *Forwarder) getTranslationParamsVideo(extPkt buffer.ExtPacket, layer int32) (TranslationParams, error) {
+	tp := TranslationParams{}
 
 	if f.targetLayers == InvalidLayers {
 		// stream is paused by streamallocator
@@ -1499,7 +1496,7 @@ func (f *Forwarder) getTranslationParamsVideo(extPkt *buffer.ExtPacket, layer in
 		return tp, nil
 	}
 
-	_, err := f.getTranslationParamsCommon(extPkt, tp)
+	tp, err := f.getTranslationParamsCommon(extPkt, tp)
 	if tp.shouldDrop || f.vp8Munger == nil || len(extPkt.Packet.Payload) == 0 {
 		return tp, err
 	}
@@ -1516,7 +1513,7 @@ func (f *Forwarder) getTranslationParamsVideo(extPkt *buffer.ExtPacket, layer in
 
 	tpVP8, err := f.vp8Munger.UpdateAndGet(extPkt, tp.rtp.snOrdering, f.currentLayers.Temporal)
 	if err != nil {
-		tp.rtp = nil
+		tp.rtp = TranslationParamsRTP{}
 		tp.shouldDrop = true
 		if err == ErrFilteredVP8TemporalLayer || err == ErrOutOfOrderVP8PictureIdCacheMiss {
 			if err == ErrFilteredVP8TemporalLayer {
@@ -1571,7 +1568,7 @@ func (f *Forwarder) GetSnTsForBlankFrames(frameRate uint32, numPackets int) ([]S
 	return snts, frameEndNeeded, err
 }
 
-func (f *Forwarder) GetPaddingVP8(frameEndNeeded bool) *buffer.VP8 {
+func (f *Forwarder) GetPaddingVP8(frameEndNeeded bool) buffer.VP8 {
 	f.lock.Lock()
 	defer f.lock.Unlock()
 

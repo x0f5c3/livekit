@@ -29,7 +29,7 @@ import (
 type TrackSender interface {
 	UpTrackLayersChange(availableLayers []int32, exemptedLayers []int32)
 	UpTrackBitrateAvailabilityChange()
-	WriteRTP(p *buffer.ExtPacket, layer int32) error
+	WriteRTP(p buffer.ExtPacket, layer int32) error
 	Close()
 	IsClosed() bool
 	// ID is the globally unique identifier for this Track.
@@ -109,7 +109,7 @@ type DownTrackState struct {
 	ForwarderState ForwarderState
 }
 
-func (d DownTrackState) String() string {
+func (d *DownTrackState) String() string {
 	return fmt.Sprintf("DownTrackState{rtpStats: %s, forwarder: %s}",
 		d.RTPStats.ToString(), d.ForwarderState.String())
 }
@@ -441,7 +441,7 @@ func (d *DownTrack) keyFrameRequester(generation uint32, layer int32) {
 }
 
 // WriteRTP writes an RTP Packet to the DownTrack
-func (d *DownTrack) WriteRTP(extPkt *buffer.ExtPacket, layer int32) error {
+func (d *DownTrack) WriteRTP(extPkt buffer.ExtPacket, layer int32) error {
 	var pool *[]byte
 	defer func() {
 		if pool != nil {
@@ -466,10 +466,10 @@ func (d *DownTrack) WriteRTP(extPkt *buffer.ExtPacket, layer int32) error {
 	}
 
 	payload := extPkt.Packet.Payload
-	if tp.vp8 != nil {
+	if tp.vp8.IsValid {
 		incomingVP8, _ := extPkt.Payload.(buffer.VP8)
 		pool = PacketFactory.Get().(*[]byte)
-		payload, err = d.translateVP8PacketTo(extPkt.Packet, &incomingVP8, tp.vp8.Header, pool)
+		payload, err = d.translateVP8PacketTo(extPkt.Packet, incomingVP8, tp.vp8.Header, pool)
 		if err != nil {
 			d.pktsDropped.Inc()
 			d.logger.Errorw("write rtp packet failed", err)
@@ -480,7 +480,7 @@ func (d *DownTrack) WriteRTP(extPkt *buffer.ExtPacket, layer int32) error {
 	var meta *packetMeta
 	if d.sequencer != nil {
 		meta = d.sequencer.push(extPkt.Packet.SequenceNumber, tp.rtp.sequenceNumber, tp.rtp.timestamp, int8(layer))
-		if meta != nil && tp.vp8 != nil {
+		if meta != nil && tp.vp8.IsValid {
 			meta.packVP8(tp.vp8.Header)
 		}
 	}
@@ -1287,7 +1287,7 @@ func (d *DownTrack) retransmitPackets(nacks []uint16) {
 
 			translatedVP8 := meta.unpackVP8()
 			pool = PacketFactory.Get().(*[]byte)
-			payload, err = d.translateVP8PacketTo(&pkt, &incomingVP8, translatedVP8, pool)
+			payload, err = d.translateVP8PacketTo(&pkt, incomingVP8, translatedVP8, pool)
 			if err != nil {
 				d.logger.Errorw("translating VP8 packet err", err)
 				continue
@@ -1358,7 +1358,7 @@ func (d *DownTrack) writeRTPHeaderExtensions(hdr *rtp.Header, extraExtensions ..
 	return nil
 }
 
-func (d *DownTrack) getTranslatedRTPHeader(extPkt *buffer.ExtPacket, tp *TranslationParams) (*rtp.Header, error) {
+func (d *DownTrack) getTranslatedRTPHeader(extPkt buffer.ExtPacket, tp TranslationParams) (*rtp.Header, error) {
 	tpRTP := tp.rtp
 	hdr := extPkt.Packet.Header
 	hdr.PayloadType = d.payloadType
@@ -1389,7 +1389,7 @@ func (d *DownTrack) getTranslatedRTPHeader(extPkt *buffer.ExtPacket, tp *Transla
 	return &hdr, nil
 }
 
-func (d *DownTrack) translateVP8PacketTo(pkt *rtp.Packet, incomingVP8 *buffer.VP8, translatedVP8 *buffer.VP8, outbuf *[]byte) ([]byte, error) {
+func (d *DownTrack) translateVP8PacketTo(pkt *rtp.Packet, incomingVP8 buffer.VP8, translatedVP8 buffer.VP8, outbuf *[]byte) ([]byte, error) {
 	buf := (*outbuf)[:len(pkt.Payload)+translatedVP8.HeaderSize-incomingVP8.HeaderSize]
 	srcPayload := pkt.Payload[incomingVP8.HeaderSize:]
 	dstPayload := buf[translatedVP8.HeaderSize:]

@@ -37,7 +37,7 @@ func NewRedPrimaryReceiver(receiver TrackReceiver, dsp DownTrackSpreaderParams) 
 	}
 }
 
-func (r *RedPrimaryReceiver) ForwardRTP(pkt *buffer.ExtPacket, spatialLayer int32) {
+func (r *RedPrimaryReceiver) ForwardRTP(pkt buffer.ExtPacket, spatialLayer int32) {
 	// extract primary payload from RED and forward to downtracks
 	if r.downTrackSpreader.DownTrackCount() == 0 {
 		return
@@ -48,16 +48,16 @@ func (r *RedPrimaryReceiver) ForwardRTP(pkt *buffer.ExtPacket, spatialLayer int3
 		return
 	}
 
-	pPkt := *pkt
-	primaryRtpPacket := *pkt.Packet
+	pPkt := pkt
+	primaryRtpPacket := pkt.Packet
 	primaryRtpPacket.Payload = payload
-	pPkt.Packet = &primaryRtpPacket
+	pPkt.Packet = primaryRtpPacket
 
 	// not modify the ExtPacket.RawPacket here for performance since it is not used by the DownTrack,
 	// otherwise it should be set to the correct value (marshal the primary rtp packet)
 
 	r.downTrackSpreader.Broadcast(func(dt TrackSender) {
-		_ = dt.WriteRTP(&pPkt, spatialLayer)
+		_ = dt.WriteRTP(pPkt, spatialLayer)
 	})
 
 	// TODO : detect rtp packet lost, recover it from the redundant payload then send to downstreams.

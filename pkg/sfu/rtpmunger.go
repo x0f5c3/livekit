@@ -102,13 +102,13 @@ func (r *RTPMunger) SeedLast(state RTPMungerState) {
 	r.lastTS = state.LastTS
 }
 
-func (r *RTPMunger) SetLastSnTs(extPkt *buffer.ExtPacket) {
+func (r *RTPMunger) SetLastSnTs(extPkt buffer.ExtPacket) {
 	r.highestIncomingSN = extPkt.Packet.SequenceNumber - 1
 	r.lastSN = extPkt.Packet.SequenceNumber
 	r.lastTS = extPkt.Packet.Timestamp
 }
 
-func (r *RTPMunger) UpdateSnTsOffsets(extPkt *buffer.ExtPacket, snAdjust uint16, tsAdjust uint32) {
+func (r *RTPMunger) UpdateSnTsOffsets(extPkt buffer.ExtPacket, snAdjust uint16, tsAdjust uint32) {
 	r.highestIncomingSN = extPkt.Packet.SequenceNumber - 1
 	r.snOffset = extPkt.Packet.SequenceNumber - r.lastSN - snAdjust
 	r.tsOffset = extPkt.Packet.Timestamp - r.lastTS - tsAdjust
@@ -118,7 +118,7 @@ func (r *RTPMunger) UpdateSnTsOffsets(extPkt *buffer.ExtPacket, snAdjust uint16,
 	r.snOffsetsOccupancy = 0
 }
 
-func (r *RTPMunger) PacketDropped(extPkt *buffer.ExtPacket) {
+func (r *RTPMunger) PacketDropped(extPkt buffer.ExtPacket) {
 	if r.highestIncomingSN != extPkt.Packet.SequenceNumber {
 		return
 	}
@@ -132,18 +132,18 @@ func (r *RTPMunger) PacketDropped(extPkt *buffer.ExtPacket) {
 	}
 }
 
-func (r *RTPMunger) UpdateAndGetSnTs(extPkt *buffer.ExtPacket) (*TranslationParamsRTP, error) {
+func (r *RTPMunger) UpdateAndGetSnTs(extPkt buffer.ExtPacket) (TranslationParamsRTP, error) {
 	// if out-of-order, look up sequence number offset cache
 	diff := extPkt.Packet.SequenceNumber - r.highestIncomingSN
 	if diff > (1 << 15) {
 		snOffset, isValid := r.getSnOffset(extPkt.Packet.SequenceNumber)
 		if !isValid {
-			return &TranslationParamsRTP{
+			return TranslationParamsRTP{
 				snOrdering: SequenceNumberOrderingOutOfOrder,
 			}, ErrOutOfOrderSequenceNumberCacheMiss
 		}
 
-		return &TranslationParamsRTP{
+		return TranslationParamsRTP{
 			snOrdering:     SequenceNumberOrderingOutOfOrder,
 			sequenceNumber: extPkt.Packet.SequenceNumber - snOffset,
 			timestamp:      extPkt.Packet.Timestamp - r.tsOffset,
@@ -166,7 +166,7 @@ func (r *RTPMunger) UpdateAndGetSnTs(extPkt *buffer.ExtPacket) (*TranslationPara
 	} else {
 		// can get duplicate packet due to FEC
 		if diff == 0 {
-			return &TranslationParamsRTP{
+			return TranslationParamsRTP{
 				snOrdering: SequenceNumberOrderingDuplicate,
 			}, ErrDuplicatePacket
 		}
@@ -179,7 +179,7 @@ func (r *RTPMunger) UpdateAndGetSnTs(extPkt *buffer.ExtPacket) (*TranslationPara
 			r.highestIncomingSN = extPkt.Packet.SequenceNumber
 			r.snOffset += 1
 
-			return &TranslationParamsRTP{
+			return TranslationParamsRTP{
 				snOrdering: SequenceNumberOrderingContiguous,
 			}, ErrPaddingOnlyPacket
 		}
@@ -208,7 +208,7 @@ func (r *RTPMunger) UpdateAndGetSnTs(extPkt *buffer.ExtPacket) (*TranslationPara
 		r.isInRtxGateRegion = false
 	}
 
-	return &TranslationParamsRTP{
+	return TranslationParamsRTP{
 		snOrdering:     ordering,
 		sequenceNumber: mungedSN,
 		timestamp:      mungedTS,
