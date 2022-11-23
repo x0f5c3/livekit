@@ -191,12 +191,7 @@ type Participant interface {
 	SubscriptionPermission() (*livekit.SubscriptionPermission, *livekit.TimedVersion)
 
 	// updates from remotes
-	UpdateSubscriptionPermission(
-		subscriptionPermission *livekit.SubscriptionPermission,
-		timedVersion *livekit.TimedVersion,
-		resolverByIdentity func(participantIdentity livekit.ParticipantIdentity) LocalParticipant,
-		resolverBySid func(participantID livekit.ParticipantID) LocalParticipant,
-	) error
+	UpdateSubscriptionPermission(subscriptionPermission *livekit.SubscriptionPermission, timedVersion *livekit.TimedVersion) error
 	UpdateVideoLayers(updateVideoLayers *livekit.UpdateVideoLayers) error
 
 	DebugInfo() map[string]interface{}
@@ -376,7 +371,7 @@ type MediaTrack interface {
 	AddSubscriber(participant LocalParticipant) error
 	RemoveSubscriber(participantID livekit.ParticipantID, willBeResumed bool)
 	IsSubscriber(subID livekit.ParticipantID) bool
-	RevokeDisallowedSubscribers(allowedSubscriberIdentities []livekit.ParticipantIdentity) []livekit.ParticipantIdentity
+	RevokeDisallowedSubscribers(allowedSubscriberIdentities []livekit.ParticipantIdentity) []LocalParticipant
 	GetAllSubscribers() []livekit.ParticipantID
 	GetNumSubscribers() int
 

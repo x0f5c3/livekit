@@ -539,8 +539,8 @@ func (t *MediaTrackReceiver) IsSubscribed() bool {
 	return t.MediaTrackSubscriptions.GetNumSubscribers() != 0 || len(t.pendingSubscribeOp) != 0
 }
 
-func (t *MediaTrackReceiver) RevokeDisallowedSubscribers(allowedSubscriberIdentities []livekit.ParticipantIdentity) []livekit.ParticipantIdentity {
-	var revokedSubscriberIdentities []livekit.ParticipantIdentity
+func (t *MediaTrackReceiver) RevokeDisallowedSubscribers(allowedSubscriberIdentities []livekit.ParticipantIdentity) []types.LocalParticipant {
+	var revokedSubscribers []types.LocalParticipant
 
 	// LK-TODO: large number of subscribers needs to be solved for this loop
 	for _, subTrack := range t.MediaTrackSubscriptions.getAllSubscribedTracks() {
@@ -558,11 +558,11 @@ func (t *MediaTrackReceiver) RevokeDisallowedSubscribers(allowedSubscriberIdenti
 				"subscriberID", subTrack.SubscriberID(),
 			)
 			t.RemoveSubscriber(subTrack.SubscriberID(), false)
-			revokedSubscriberIdentities = append(revokedSubscriberIdentities, subTrack.SubscriberIdentity())
+			revokedSubscribers = append(revokedSubscribers, subTrack.Subscriber())
 		}
 	}
 
-	return revokedSubscriberIdentities
+	return revokedSubscribers
 }
 
 func (t *MediaTrackReceiver) UpdateTrackInfo(ti *livekit.TrackInfo) {

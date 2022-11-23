@@ -188,16 +188,16 @@ type FakeMediaTrack struct {
 		arg1 livekit.ParticipantID
 		arg2 bool
 	}
-	RevokeDisallowedSubscribersStub        func([]livekit.ParticipantIdentity) []livekit.ParticipantIdentity
+	RevokeDisallowedSubscribersStub        func([]livekit.ParticipantIdentity) []types.LocalParticipant
 	revokeDisallowedSubscribersMutex       sync.RWMutex
 	revokeDisallowedSubscribersArgsForCall []struct {
 		arg1 []livekit.ParticipantIdentity
 	}
 	revokeDisallowedSubscribersReturns struct {
-		result1 []livekit.ParticipantIdentity
+		result1 []types.LocalParticipant
 	}
 	revokeDisallowedSubscribersReturnsOnCall map[int]struct {
-		result1 []livekit.ParticipantIdentity
+		result1 []types.LocalParticipant
 	}
 	SetMutedStub        func(bool)
 	setMutedMutex       sync.RWMutex
@@ -1192,7 +1192,7 @@ func (fake *FakeMediaTrack) RemoveSubscriberArgsForCall(i int) (livekit.Particip
 	return argsForCall.arg1, argsForCall.arg2
 }
 
-func (fake *FakeMediaTrack) RevokeDisallowedSubscribers(arg1 []livekit.ParticipantIdentity) []livekit.ParticipantIdentity {
+func (fake *FakeMediaTrack) RevokeDisallowedSubscribers(arg1 []livekit.ParticipantIdentity) []types.LocalParticipant {
 	var arg1Copy []livekit.ParticipantIdentity
 	if arg1 != nil {
 		arg1Copy = make([]livekit.ParticipantIdentity, len(arg1))
@@ -1222,7 +1222,7 @@ func (fake *FakeMediaTrack) RevokeDisallowedSubscribersCallCount() int {
 	return len(fake.revokeDisallowedSubscribersArgsForCall)
 }
 
-func (fake *FakeMediaTrack) RevokeDisallowedSubscribersCalls(stub func([]livekit.ParticipantIdentity) []livekit.ParticipantIdentity) {
+func (fake *FakeMediaTrack) RevokeDisallowedSubscribersCalls(stub func([]livekit.ParticipantIdentity) []types.LocalParticipant) {
 	fake.revokeDisallowedSubscribersMutex.Lock()
 	defer fake.revokeDisallowedSubscribersMutex.Unlock()
 	fake.RevokeDisallowedSubscribersStub = stub
@@ -1235,26 +1235,26 @@ func (fake *FakeMediaTrack) RevokeDisallowedSubscribersArgsForCall(i int) []live
 	return argsForCall.arg1
 }
 
-func (fake *FakeMediaTrack) RevokeDisallowedSubscribersReturns(result1 []livekit.ParticipantIdentity) {
+func (fake *FakeMediaTrack) RevokeDisallowedSubscribersReturns(result1 []types.LocalParticipant) {
 	fake.revokeDisallowedSubscribersMutex.Lock()
 	defer fake.revokeDisallowedSubscribersMutex.Unlock()
 	fake.RevokeDisallowedSubscribersStub = nil
 	fake.revokeDisallowedSubscribersReturns = struct {
-		result1 []livekit.ParticipantIdentity
+		result1 []types.LocalParticipant
 	}{result1}
 }
 
-func (fake *FakeMediaTrack) RevokeDisallowedSubscribersReturnsOnCall(i int, result1 []livekit.ParticipantIdentity) {
+func (fake *FakeMediaTrack) RevokeDisallowedSubscribersReturnsOnCall(i int, result1 []types.LocalParticipant) {
 	fake.revokeDisallowedSubscribersMutex.Lock()
 	defer fake.revokeDisallowedSubscribersMutex.Unlock()
 	fake.RevokeDisallowedSubscribersStub = nil
 	if fake.revokeDisallowedSubscribersReturnsOnCall == nil {
 		fake.revokeDisallowedSubscribersReturnsOnCall = make(map[int]struct {
-			result1 []livekit.ParticipantIdentity
+			result1 []types.LocalParticipant
 		})
 	}
 	fake.revokeDisallowedSubscribersReturnsOnCall[i] = struct {
-		result1 []livekit.ParticipantIdentity
+		result1 []types.LocalParticipant
 	}{result1}
 }
 
