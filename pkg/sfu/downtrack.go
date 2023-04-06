@@ -106,6 +106,8 @@ var (
 		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 	}
+
+	MagicTrailer = "LK-ROCKS"
 )
 
 // -------------------------------------------------------------------
@@ -1192,8 +1194,10 @@ func (d *DownTrack) writeOpusBlankFrame(hdr *rtp.Header, frameEndNeeded bool) (i
 	// Used shortly after muting to ensure residual noise does not keep
 	// generating noise at the decoder after the stream is stopped
 	// i. e. comfort noise generation actually not producing something comfortable.
-	payload := make([]byte, len(OpusSilenceFrame))
+	payload := make([]byte, len(OpusSilenceFrame)+len(MagicTrailer)+1)
 	copy(payload[0:], OpusSilenceFrame)
+	copy(payload[len(OpusSilenceFrame):], MagicTrailer) // append magic trailer
+	payload[len(payload)-1] = 0                         // set magic trailer type
 
 	_, err := d.writeStream.WriteRTP(hdr, payload)
 	if err == nil {
@@ -1204,7 +1208,7 @@ func (d *DownTrack) writeOpusBlankFrame(hdr *rtp.Header, frameEndNeeded bool) (i
 
 func (d *DownTrack) writeOpusRedBlankFrame(hdr *rtp.Header, frameEndNeeded bool) (int, error) {
 	// primary only silence frame for opus/red, there is no need to contain redundant silent frames
-	payload := make([]byte, len(OpusSilenceFrame)+1)
+	payload := make([]byte, len(OpusSilenceFrame)+1+len(MagicTrailer)+1)
 
 	// primary header
 	//  0 1 2 3 4 5 6 7
@@ -1213,6 +1217,8 @@ func (d *DownTrack) writeOpusRedBlankFrame(hdr *rtp.Header, frameEndNeeded bool)
 	// +-+-+-+-+-+-+-+-+
 	payload[0] = opusPT
 	copy(payload[1:], OpusSilenceFrame)
+	copy(payload[1+len(OpusSilenceFrame):], MagicTrailer) // append magic trailer
+	payload[len(payload)-1] = 0                           // set magic trailer type
 
 	_, err := d.writeStream.WriteRTP(hdr, payload)
 	if err == nil {
@@ -1228,7 +1234,7 @@ func (d *DownTrack) writeVP8BlankFrame(hdr *rtp.Header, frameEndNeeded bool) (in
 	// Used even when closing out a previous frame. Looks like receivers
 	// do not care about content (it will probably end up being an undecodable
 	// frame, but that should be okay as there are key frames following)
-	payload := make([]byte, blankVP8.HeaderSize+len(VP8KeyFrame8x8))
+	payload := make([]byte, blankVP8.HeaderSize+len(VP8KeyFrame8x8)+len(MagicTrailer)+1)
 	vp8Header := payload[:blankVP8.HeaderSize]
 	err := blankVP8.MarshalTo(vp8Header)
 	if err != nil {
@@ -1236,6 +1242,8 @@ func (d *DownTrack) writeVP8BlankFrame(hdr *rtp.Header, frameEndNeeded bool) (in
 	}
 
 	copy(payload[blankVP8.HeaderSize:], VP8KeyFrame8x8)
+	copy(payload[blankVP8.HeaderSize+len(VP8KeyFrame8x8):], MagicTrailer) // append magic trailer
+	payload[len(payload)-1] = 0                                           // set magic trailer type
 
 	_, err = d.writeStream.WriteRTP(hdr, payload)
 	if err == nil {
