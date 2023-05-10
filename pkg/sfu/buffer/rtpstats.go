@@ -547,13 +547,13 @@ func (r *RTPStats) UpdateFromReceiverReport(rr rtcp.ReceptionReport) (rtt uint32
 		r.lastRRTime = time.Now()
 		r.lastRR = rr
 	} else {
-		r.logger.Debugw(
-			fmt.Sprintf("receiver report potentially out of order, highestSN: existing: %d, received: %d", r.extHighestSNOverridden, rr.LastSequenceNumber),
-			"lastRRTime", r.lastRRTime,
-			"lastRR", r.lastRR,
-			"sinceLastRR", time.Since(r.lastRRTime),
-			"receivedRR", rr,
-		)
+		// r.logger.Debugw(
+		// 	fmt.Sprintf("receiver report potentially out of order, highestSN: existing: %d, received: %d", r.extHighestSNOverridden, rr.LastSequenceNumber),
+		// 	"lastRRTime", r.lastRRTime,
+		// 	"lastRR", r.lastRR,
+		// 	"sinceLastRR", time.Since(r.lastRRTime),
+		// 	"receivedRR", rr,
+		// )
 	}
 	return
 }
@@ -729,44 +729,45 @@ func (r *RTPStats) SetRtcpSenderReportData(srData *RTCPSenderReportData) {
 
 	// prevent against extreme case of anachronous sender reports
 	if r.srData != nil && r.srData.NTPTimestamp > srData.NTPTimestamp {
-		r.logger.Debugw(
-			"anachronous RTCP sender report",
-			"current", srData.NTPTimestamp.Time(),
-			"last", r.srData.NTPTimestamp.Time(),
-		)
+		// r.logger.Debugw(
+		// 	"received anachronous sender report",
+		// 	"current", srData.NTPTimestamp.Time(),
+		// 	"last", r.srData.NTPTimestamp.Time(),
+		// )
 		return
 	}
 
 	// TODO-REMOVE-AFTER-DEBUG-START
-	ntpTime := srData.NTPTimestamp.Time()
+	// ntpTime := srData.NTPTimestamp.Time()
 
-	var ntpDiffSinceLast, arrivalDiffSinceLast time.Duration
-	var rtpDiffSinceLast uint32
-	if r.srData != nil {
-		ntpDiffSinceLast = ntpTime.Sub(r.srData.NTPTimestamp.Time())
-		rtpDiffSinceLast = srData.RTPTimestamp - r.srData.RTPTimestamp
-		arrivalDiffSinceLast = srData.ArrivalTime.Sub(r.srData.ArrivalTime)
-	}
+	// var ntpDiffSinceLast, arrivalDiffSinceLast time.Duration
+	// var rtpDiffSinceLast uint32
+	// if r.srData != nil {
+	// 	ntpDiffSinceLast = ntpTime.Sub(r.srData.NTPTimestamp.Time())
+	// 	rtpDiffSinceLast = srData.RTPTimestamp - r.srData.RTPTimestamp
+	// 	arrivalDiffSinceLast = srData.ArrivalTime.Sub(r.srData.ArrivalTime)
+	// }
 
-	timeSinceFirst := time.Since(r.firstTime) // ideally should use NTP time from SR, but that is a different time base, now is a resonable approximation
-	rtpDiffSinceFirst := getExtTS(srData.RTPTimestamp, r.tsCycles) - r.extStartTS
-	drift := int64(uint64(timeSinceFirst.Nanoseconds()*int64(r.params.ClockRate)/1e9) - rtpDiffSinceFirst)
-	driftMs := (float64(drift) * 1000) / float64(r.params.ClockRate)
+	// timeSinceFirst := time.Since(r.firstTime) // ideally should use NTP time from SR, but that is a different time base, now is a resonable approximation
+	// rtpDiffSinceFirst := getExtTS(srData.RTPTimestamp, r.tsCycles) - r.extStartTS
+	// drift := int64(rtpDiffSinceFirst - uint64(timeSinceFirst.Nanoseconds()*int64(r.params.ClockRate)/1e9))
+	// driftMs := (float64(drift) * 1000) / float64(r.params.ClockRate)
 
-	r.logger.Debugw(
-		"received sender report",
-		"ntp", ntpTime,
-		"rtp", srData.RTPTimestamp,
-		"arrival", srData.ArrivalTime,
-		"ntpDiff", ntpDiffSinceLast,
-		"rtpDiff", rtpDiffSinceLast,
-		"arrivalDiff", arrivalDiffSinceLast,
-		"expectedTimeDiff", float64(rtpDiffSinceLast)/float64(r.params.ClockRate),
-		"timeSinceFirst", timeSinceFirst,
-		"rtpDiffSinceFirst", rtpDiffSinceFirst,
-		"drift", drift,
-		"driftMs", driftMs,
-	)
+	// r.logger.Debugw(
+	// 	"received sender report",
+	// 	"ntp", ntpTime,
+	// 	"rtp", srData.RTPTimestamp,
+	// 	"arrival", srData.ArrivalTime,
+	// 	"ntpDiff", ntpDiffSinceLast,
+	// 	"rtpDiff", rtpDiffSinceLast,
+	// 	"arrivalDiff", arrivalDiffSinceLast,
+	// 	"expectedTimeDiff", float64(rtpDiffSinceLast)/float64(r.params.ClockRate),
+	// 	"timeSinceFirst", timeSinceFirst,
+	// 	"rtpDiffSinceFirst", rtpDiffSinceFirst,
+	// 	"drift", drift,
+	// 	"driftMs", driftMs,
+	// 	"rate", float64(rtpDiffSinceFirst)/timeSinceFirst.Seconds(),
+	// )
 	// TODO-REMOVE-AFTER-DEBUG-END
 
 	srDataCopy := *srData
@@ -826,16 +827,16 @@ func (r *RTPStats) GetRtcpSenderReport(ssrc uint32) (*rtcp.SenderReport, float64
 
 	expectedExtRTP := r.extStartTS + uint64(timeSinceFirst.Nanoseconds()*int64(r.params.ClockRate)/1e9)
 	if getExtTS(r.highestTS, r.tsCycles) > expectedExtRTP || now.Before(r.highestTime) {
-		r.logger.Debugw(
-			"anachronous sender report",
-			"firstTime", r.firstTime.String(),
-			"currentTime", now.String(),
-			"highestTime", r.highestTime.String(),
-			"timeSinceFirst", timeSinceFirst,
-			"extStartTS", r.extStartTS,
-			"highestExtRTP", getExtTS(r.highestTS, r.tsCycles),
-			"expectedExtRTP", expectedExtRTP,
-		)
+		// r.logger.Debugw(
+		// 	"sending anachronous sender report",
+		// 	"firstTime", r.firstTime.String(),
+		// 	"currentTime", now.String(),
+		// 	"highestTime", r.highestTime.String(),
+		// 	"timeSinceFirst", timeSinceFirst,
+		// 	"extStartTS", r.extStartTS,
+		// 	"highestExtRTP", getExtTS(r.highestTS, r.tsCycles),
+		// 	"expectedExtRTP", expectedExtRTP,
+		// )
 	}
 
 	timeSinceHighest := time.Since(r.highestTime)
@@ -859,31 +860,31 @@ func (r *RTPStats) GetRtcpSenderReport(ssrc uint32) (*rtcp.SenderReport, float64
 	// TODO-REMOVE-AFTER-DEBUG-STOP
 
 	// TODO-REMOVE-AFTER-DEBUG-START
-	ntpTime := nowNTP.Time()
+	// ntpTime := nowNTP.Time()
 
-	ntpDiffLocal := ntpTime.Sub(r.highestTime)
-	rtpDiffLocal := int32(nowRTP - r.highestTS)
-	rtpOffsetLocal := int32(nowRTP - r.highestTS - uint32(ntpDiffLocal.Nanoseconds()*int64(r.params.ClockRate)/1e9))
+	// ntpDiffLocal := ntpTime.Sub(r.highestTime)
+	// rtpDiffLocal := int32(nowRTP - r.highestTS)
+	// rtpOffsetLocal := int32(nowRTP - r.highestTS - uint32(ntpDiffLocal.Nanoseconds()*int64(r.params.ClockRate)/1e9))
 
-	drift := int64(uint64(timeSinceFirst.Nanoseconds()*int64(r.params.ClockRate)/1e9) - rtpDiffSinceFirst)
-	driftMs := (float64(drift) * 1000) / float64(r.params.ClockRate)
-
-	r.logger.Debugw(
-		"sending sender report",
-		"highestTS", r.highestTS,
-		"highestTime", r.highestTime.String(),
-		"reportTS", nowRTP,
-		"expectedTS", uint32(expectedExtRTP),
-		"reportTime", ntpTime.String(),
-		"rtpDiffLocal", rtpDiffLocal,
-		"ntpDiffLocal", ntpDiffLocal,
-		"rtpOffsetLocal", rtpOffsetLocal,
-		"timeSinceFirst", timeSinceFirst,
-		"rtpDiffSinceFirst", rtpDiffSinceFirst,
-		"drift", drift,
-		"driftMs", driftMs,
-		"rate", measurement,
-	)
+	// rtpDiffSinceFirst := getExtTS(nowRTP, r.tsCycles) - r.extStartTS
+	// drift := int64(rtpDiffSinceFirst - uint64(timeSinceFirst.Nanoseconds()*int64(r.params.ClockRate)/1e9))
+	// driftMs := (float64(drift) * 1000) / float64(r.params.ClockRate)
+	// r.logger.Debugw(
+	// 	"sending sender report",
+	// 	"highestTS", r.highestTS,
+	// 	"highestTime", r.highestTime.String(),
+	// 	"reportTS", nowRTP,
+	// 	"expectedTS", uint32(expectedExtRTP),
+	// 	"reportTime", ntpTime.String(),
+	// 	"rtpDiffLocal", rtpDiffLocal,
+	// 	"ntpDiffLocal", ntpDiffLocal,
+	// 	"rtpOffsetLocal", rtpOffsetLocal,
+	// 	"timeSinceFirst", timeSinceFirst,
+	// 	"rtpDiffSinceFirst", rtpDiffSinceFirst,
+	// 	"drift", drift,
+	// 	"driftMs", driftMs,
+	// 	"rate", float64(rtpDiffSinceFirst)/timeSinceFirst.Seconds(),
+	// )
 	// TODO-REMOVE-AFTER-DEBUG-END
 
 	r.lastSRTime = now
