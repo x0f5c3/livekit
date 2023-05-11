@@ -851,12 +851,12 @@ func (r *RTPStats) GetRtcpSenderReport(ssrc uint32) (*rtcp.SenderReport, float64
 		measurement,
 		now,
 	)
-	r.logger.Debugw(
-		"pid controller output",
-		"measurement", measurement,
-		"errorTerm", float64(r.params.ClockRate)-measurement,
-		"pidOutput", pidOutput,
-	)
+	// r.logger.Debugw(
+	// 	"pid controller output",
+	// 	"measurement", measurement,
+	// 	"errorTerm", float64(r.params.ClockRate)-measurement,
+	// 	"pidOutput", pidOutput,
+	// )
 	// TODO-REMOVE-AFTER-DEBUG-STOP
 
 	// TODO-REMOVE-AFTER-DEBUG-START

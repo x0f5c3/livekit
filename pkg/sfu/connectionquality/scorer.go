@@ -363,7 +363,7 @@ func (q *qualityScorer) getPacketLossWeight(stat *windowStat) float64 {
 	pps := float64(stat.packetsExpected) / stat.duration.Seconds()
 	if pps > q.maxPPS {
 		q.maxPPS = pps
-		q.params.Logger.Debugw("updating maxPPS", "expected", stat.packetsExpected, "duration", stat.duration.Seconds(), "pps", pps)
+		// q.params.Logger.Debugw("updating maxPPS", "expected", stat.packetsExpected, "duration", stat.duration.Seconds(), "pps", pps)
 	}
 
 	if q.maxPPS == 0 {
